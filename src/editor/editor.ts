@@ -421,6 +421,11 @@ export class Editor {
     });
     this.listen(window, 'blur', () => {
       this.spaceDown = false;
+      // Any release while away won't be seen, so finish an in-progress gesture now.
+      if (this.state && this.state.kind !== 'pinch') {
+        this.pointers.clear();
+        this.onPointerUp(new PointerEvent('pointerup'));
+      }
       this.updateCursor();
     });
     this.listen(document, 'copy', (e: ClipboardEvent) => this.onCopy(e, false));
@@ -1671,6 +1676,11 @@ export class Editor {
     this.pointerInside = true;
     const st = this.state;
     this.reportPresence();
+    // The release was missed (e.g. alt-tabbed away while pressing), so end the gesture.
+    if (st && st.kind !== 'pinch' && e.pointerType !== 'touch' && e.buttons === 0) {
+      this.onPointerUp(e);
+      return;
+    }
     if (!st) {
       this.updateHoverCursor(sp, wp);
       return;
